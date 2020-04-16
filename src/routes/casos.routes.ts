@@ -1,6 +1,6 @@
 import { Server } from '@hapi/hapi'
 
-import { getCasos, getCaso } from '../controllers/casos.controller';
+import { getCasos, getCaso, getCasoByProvince, getCasoByProvinceSummary } from '../controllers/casos.controller';
 
 export const casos = (server: Server) => {
     server.route({
@@ -13,5 +13,17 @@ export const casos = (server: Server) => {
         method: 'GET',
         path: '/casos/{id}',
         handler: getCaso
+    })
+
+    server.route({
+        method: 'GET',
+        path: '/casos_provincias',
+        handler: getCasoByProvinceSummary
+    })
+
+    server.route({
+        method: 'GET',
+        path: '/casos_provincias/{pcode}',
+        handler: getCasoByProvince
     })
 }
