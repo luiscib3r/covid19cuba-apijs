@@ -4,6 +4,8 @@ import { centros_diagnostico } from './routes/centros_diagnostico.routes'
 import { resumen_dia } from './routes/resumen_dia.routes'
 import { casos } from './routes/casos.routes';
 
+import { api } from './routes/api.routes';
+
 export const init = async () => {
     const server: Server = new Server({
         port: process.env.PORT || 3000,
@@ -21,6 +23,8 @@ export const init = async () => {
     centros_diagnostico(server)
     resumen_dia(server)
     casos(server)
+
+    api(server)
 
     await server.start()
     console.log('Server runing on %s', server.info.uri);
