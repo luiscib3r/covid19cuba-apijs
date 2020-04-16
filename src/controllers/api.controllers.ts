@@ -3,6 +3,8 @@ import { Request, ResponseToolkit, ResponseObject } from '@hapi/hapi'
 import CasoDetectado from '../models/CasoDetectado'
 import ResumenDia from '../models/ResumenDia'
 
+const plt = require('matplotnode')
+
 export const summary = async (req : Request, h : ResponseToolkit):
 Promise<ResponseObject> => {
     try {

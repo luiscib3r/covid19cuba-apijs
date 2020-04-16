@@ -2,7 +2,7 @@
   "name": "covid19cuba-apijs",
   "version": "1.0.0",
   "scripts": {
-    "build" : "tsc",
+    "build": "tsc",
     "start": "node ./dist/index.js",
     "buildrun": "tsc && node ./dist/index.js",
     "dev": "nodemon -e ts --exec 'tsc && node ./dist/index.js'"
@@ -10,7 +10,6 @@
   "license": "AGPL",
   "dependencies": {
     "@hapi/hapi": "^19.1.1",
-    "matplotnode": "^0.4.2",
     "mongoose": "^5.9.7"
   },
   "devDependencies": {
