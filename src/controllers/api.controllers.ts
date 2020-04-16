@@ -53,3 +53,17 @@ Promise<ResponseObject> => {
             return h.response().code(500)
     }
 }
+
+export const evolucion = async (req: Request, h: ResponseToolkit) => {
+    let summary_days = await ResumenDia.find()
+
+    let diagnosticados = summary_days.map((e) => {
+        return e.diagnosticados_numero
+    })
+
+    console.log(diagnosticados)
+
+    h.response({
+        diagnosticados,
+    })
+}
