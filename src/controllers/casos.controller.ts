@@ -48,6 +48,7 @@ Promise<ResponseObject> => {
         const casos = await CasoDetectado.find({'provincia_detección': provincia})
 
         return h.response({
+            "provincia": provincia,
             "total": casos.length,
             "casos": casos
         })
