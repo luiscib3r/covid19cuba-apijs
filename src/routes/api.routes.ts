@@ -1,5 +1,5 @@
 import { Server } from '@hapi/hapi'
-import { summary, evolution, sexo, modo, casos_extranjeros, nacionalidad, edad, tests } from '../controllers/api.controllers'
+import { summary, evolution, sexo, modo, casos_extranjeros, nacionalidad, edad, tests, provincias, municipios } from '../controllers/api.controllers'
 
 export const api = (server : Server ) => {
     server.route([
@@ -42,6 +42,16 @@ export const api = (server : Server ) => {
             path: '/tests',
             method: 'GET',
             handler: tests
+        },
+        {
+            path: '/provincias',
+            method: 'GET',
+            handler: provincias
+        },
+        {
+            path: '/municipios',
+            method: 'GET',
+            handler: municipios
         },
     ])
 }

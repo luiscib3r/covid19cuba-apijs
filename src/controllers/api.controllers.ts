@@ -217,3 +217,31 @@ Promise<ResponseObject> => {
         proporcion
     })
 }
+
+export const provincias = async (req: Request, h: ResponseToolkit):
+Promise<ResponseObject> => {
+    let casos = await CasoDetectado.find()
+
+    let provincias = {}
+
+    casos.forEach((c) => {
+        let t = (provincias as any)[c.provincia_detección] || 0;
+        (provincias as any)[c.provincia_detección] = t + 1
+    })
+
+    return h.response(provincias)
+}
+
+export const municipios = async (req: Request, h: ResponseToolkit):
+Promise<ResponseObject> => {
+    let casos = await CasoDetectado.find()
+
+    let municipios = {}
+
+    casos.forEach((c) => {
+        let t = (municipios as any)[c.municipio_detección] || 0;
+        (municipios as any)[c.municipio_detección] = t + 1
+    })
+
+    return h.response(municipios)
+}
