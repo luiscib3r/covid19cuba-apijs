@@ -5,6 +5,7 @@ import { resumen_dia } from './routes/resumen_dia.routes'
 import { casos } from './routes/casos.routes';
 
 import { api } from './routes/api.routes';
+import { api_graph } from './routes/api_graph.routes'
 
 export const init = async () => {
     const server: Server = new Server({
@@ -25,6 +26,7 @@ export const init = async () => {
     casos(server)
 
     api(server)
+    api_graph(server)
 
     await server.start()
     console.log('Server runing on %s', server.info.uri);
