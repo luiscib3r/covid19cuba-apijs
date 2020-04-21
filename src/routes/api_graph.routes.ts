@@ -1,5 +1,18 @@
 import { Server } from '@hapi/hapi'
-import { summary, evolution, sexo, modo, casos_extranjeros, nacionalidad, edad, tests, provincias, municipios } from '../controllers/api_graph.controllers'
+import { 
+    summary, 
+    evolution, 
+    evolution_recuperados,
+    evolution_fallecidos,
+    sexo, 
+    modo, 
+    casos_extranjeros, 
+    nacionalidad, 
+    edad, 
+    tests, 
+    provincias, 
+    municipios 
+} from '../controllers/api_graph.controllers'
 
 export const api_graph = (server : Server ) => {
     server.route([
@@ -12,6 +25,16 @@ export const api_graph = (server : Server ) => {
             path: '/evolution_graph',
             method: 'GET',
             handler: evolution
+        },
+        {
+            path: '/evolution_recuperados_graph',
+            method: 'GET',
+            handler: evolution_recuperados
+        },
+        {
+            path: '/evolution_fallecidos_graph',
+            method: 'GET',
+            handler: evolution_fallecidos
         },
         {
             path: '/sexo_graph',

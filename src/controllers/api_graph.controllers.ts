@@ -27,11 +27,11 @@ export const summary = async (req: Request, h: ResponseToolkit):
 
         let activos = total_diagnosticados - total_evacuados - total_recuperados - total_fallecidos
 
-        let recuperacion = (total_recuperados * 100 / activos).toFixed(2)
+        let recuperacion = Number((total_recuperados * 100 / activos).toFixed(2))
 
         let total_ingresados = summary_days[summary_days.length - 1].sujetos_riesgo
 
-        let mortalidad = (total_fallecidos * 100 / activos).toFixed(2)
+        let mortalidad = Number((total_fallecidos * 100 / activos).toFixed(2))
 
         let fecha = summary_days[summary_days.length - 1].fecha
 
@@ -51,7 +51,7 @@ export const summary = async (req: Request, h: ResponseToolkit):
                 mortalidad,
                 fecha
             },
-            {responseType: 'arraybuffer'}
+            { responseType: 'arraybuffer' }
         )
 
         return h.response(Buffer.from(gresponse.data, 'binary'))
@@ -66,194 +66,458 @@ export const summary = async (req: Request, h: ResponseToolkit):
 
 export const evolution = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let summary_days = await ResumenDia.find()
+    try {
+        let summary_days = await ResumenDia.find()
 
-    let diagnosticados: Array<number> = []
-    let fallecidos: Array<number> = []
-    let recuperados: Array<number> = []
-    let activos: Array<number> = []
+        let diagnosticados: Array<number> = []
+        let fallecidos: Array<number> = []
+        let recuperados: Array<number> = []
+        let activos: Array<number> = []
 
-    for (var i = 0; i < summary_days.length; i++) {
-        diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
-        fallecidos[i] = summary_days[i].muertes_numero || 0
-        recuperados[i] = summary_days[i].recuperados_numero || 0
-        let evacuados = summary_days[i].evacuados_numero || 0
+        for (var i = 0; i < summary_days.length; i++) {
+            diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
+            fallecidos[i] = summary_days[i].muertes_numero || 0
+            recuperados[i] = summary_days[i].recuperados_numero || 0
+            let evacuados = summary_days[i].evacuados_numero || 0
 
-        activos[i] = diagnosticados[i] - fallecidos[i] - recuperados[i] - evacuados
+            activos[i] = diagnosticados[i] - fallecidos[i] - recuperados[i] - evacuados
+        }
+
+        let diagnosticados_acc: Array<number> = [diagnosticados[0],]
+        let fallecidos_acc: Array<number> = [fallecidos[0],]
+        let recuperados_acc: Array<number> = [recuperados[0],]
+        let activos_acc: Array<number> = [activos[0],]
+
+        for (var i = 1; i < summary_days.length; i++) {
+            diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
+            fallecidos_acc[i] = fallecidos_acc[i - 1] + fallecidos[i]
+            recuperados_acc[i] = recuperados_acc[i - 1] + recuperados[i]
+            activos_acc[i] = activos_acc[i - 1] + activos[i]
+        }
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'evolution',
+            {
+                diagnosticados,
+                diagnosticados_acc,
+                //    fallecidos,
+                //    fallecidos_acc,
+                //    recuperados,
+                //    recuperados_acc,
+                activos,
+                activos_acc
+            },
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
     }
-
-    let diagnosticados_acc: Array<number> = [diagnosticados[0],]
-    let fallecidos_acc: Array<number> = [fallecidos[0],]
-    let recuperados_acc: Array<number> = [recuperados[0],]
-    let activos_acc: Array<number> = [activos[0],]
-
-    for (var i = 1; i < summary_days.length; i++) {
-        diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
-        fallecidos_acc[i] = fallecidos_acc[i - 1] + fallecidos[i]
-        recuperados_acc[i] = recuperados_acc[i - 1] + recuperados[i]
-        activos_acc[i] = activos_acc[i - 1] + activos[i]
+    catch (err) {
+        return h.response().code(500)
     }
+}
 
-    return h.response({
-        diagnosticados,
-        diagnosticados_acc,
-        fallecidos,
-        fallecidos_acc,
-        recuperados,
-        recuperados_acc,
-        activos,
-        activos_acc
-    })
+export const evolution_recuperados = async (req: Request, h: ResponseToolkit):
+    Promise<ResponseObject> => {
+    try {
+        let summary_days = await ResumenDia.find()
+
+        let diagnosticados: Array<number> = []
+        let fallecidos: Array<number> = []
+        let recuperados: Array<number> = []
+        let activos: Array<number> = []
+
+        for (var i = 0; i < summary_days.length; i++) {
+            diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
+            fallecidos[i] = summary_days[i].muertes_numero || 0
+            recuperados[i] = summary_days[i].recuperados_numero || 0
+            let evacuados = summary_days[i].evacuados_numero || 0
+
+            activos[i] = diagnosticados[i] - fallecidos[i] - recuperados[i] - evacuados
+        }
+
+        let diagnosticados_acc: Array<number> = [diagnosticados[0],]
+        let fallecidos_acc: Array<number> = [fallecidos[0],]
+        let recuperados_acc: Array<number> = [recuperados[0],]
+        let activos_acc: Array<number> = [activos[0],]
+
+        for (var i = 1; i < summary_days.length; i++) {
+            diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
+            fallecidos_acc[i] = fallecidos_acc[i - 1] + fallecidos[i]
+            recuperados_acc[i] = recuperados_acc[i - 1] + recuperados[i]
+            activos_acc[i] = activos_acc[i - 1] + activos[i]
+        }
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'evolution_recuperados',
+            {
+                //    diagnosticados,
+                //    diagnosticados_acc,
+                //    fallecidos,
+                //    fallecidos_acc,
+                recuperados,
+                recuperados_acc,
+                //    activos,
+                //    activos_acc
+            },
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
+}
+
+export const evolution_fallecidos = async (req: Request, h: ResponseToolkit):
+    Promise<ResponseObject> => {
+    try {
+        let summary_days = await ResumenDia.find()
+
+        let diagnosticados: Array<number> = []
+        let fallecidos: Array<number> = []
+        let recuperados: Array<number> = []
+        let activos: Array<number> = []
+
+        for (var i = 0; i < summary_days.length; i++) {
+            diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
+            fallecidos[i] = summary_days[i].muertes_numero || 0
+            recuperados[i] = summary_days[i].recuperados_numero || 0
+            let evacuados = summary_days[i].evacuados_numero || 0
+
+            activos[i] = diagnosticados[i] - fallecidos[i] - recuperados[i] - evacuados
+        }
+
+        let diagnosticados_acc: Array<number> = [diagnosticados[0],]
+        let fallecidos_acc: Array<number> = [fallecidos[0],]
+        let recuperados_acc: Array<number> = [recuperados[0],]
+        let activos_acc: Array<number> = [activos[0],]
+
+        for (var i = 1; i < summary_days.length; i++) {
+            diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
+            fallecidos_acc[i] = fallecidos_acc[i - 1] + fallecidos[i]
+            recuperados_acc[i] = recuperados_acc[i - 1] + recuperados[i]
+            activos_acc[i] = activos_acc[i - 1] + activos[i]
+        }
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'evolution_fallecidos',
+            {
+                //    diagnosticados,
+                //    diagnosticados_acc,
+                fallecidos,
+                fallecidos_acc,
+                //    recuperados,
+                //    recuperados_acc,
+                //    activos,
+                //    activos_acc
+            },
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const sexo = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let mujeres = await CasoDetectado.find({ sexo: "mujer" }).count()
-    let hombres = await CasoDetectado.find({ sexo: "hombre" }).count()
-    let desconocido = (await CasoDetectado.find().count()) - hombres - mujeres
+    try {
+        let mujeres = await CasoDetectado.find({ sexo: "mujer" }).count()
+        let hombres = await CasoDetectado.find({ sexo: "hombre" }).count()
+        let desconocido = (await CasoDetectado.find().count()) - hombres - mujeres
 
-    return h.response({
-        mujeres,
-        hombres,
-        desconocido
-    })
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'sexo',
+            {
+                mujeres,
+                hombres,
+                desconocido
+            },
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const modo = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let modos = {}
+    try {
+        let modos = {}
 
-    let casos = await CasoDetectado.find()
+        let casos = await CasoDetectado.find()
 
-    casos.forEach((c) => {
-        if (c.contagio) {
-            let t: number = (modos as any)[c.contagio] || 0;
-            (modos as any)[c.contagio] = t + 1
-        }
-        else {
-            let t: number = (modos as any)['desconocido'] || 0;
-            (modos as any)['desconocido'] = t + 1
-        }
-    })
+        casos.forEach((c) => {
+            if (c.contagio) {
+                let t: number = (modos as any)[c.contagio] || 0;
+                (modos as any)[c.contagio] = t + 1
+            }
+            else {
+                let t: number = (modos as any)['desconocido'] || 0;
+                (modos as any)['desconocido'] = t + 1
+            }
+        })
 
-    return h.response(modos)
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'modo',
+            modos,
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const casos_extranjeros = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let paises = {}
+    try {
 
-    let casos = await CasoDetectado.find()
+        let paises = {}
 
-    casos.forEach((c) => {
-        if (c.pais) {
-            if (c.pais != "cu") {
-                let t: number = (paises as any)[c.pais] || 0;
-                (paises as any)[c.pais] = t + 1
+        let casos = await CasoDetectado.find()
+
+        casos.forEach((c) => {
+            if (c.pais) {
+                if (c.pais != "cu") {
+                    let t: number = (paises as any)[c.pais] || 0;
+                    (paises as any)[c.pais] = t + 1
+                }
             }
-        }
-        else {
-            let t: number = (paises as any)['desconocido'] || 0;
-            (paises as any)['desconocido'] = t + 1
-        }
-    })
+            else {
+                let t: number = (paises as any)['desconocido'] || 0;
+                (paises as any)['desconocido'] = t + 1
+            }
+        })
 
-    return h.response(paises)
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'pais',
+            paises,
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const nacionalidad = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let cubanos = await CasoDetectado.find({ pais: "cu" }).count()
-    let extranjeros = (await CasoDetectado.find().count()) - cubanos
+    try {
+        let cubanos = await CasoDetectado.find({ pais: "cu" }).count()
+        let extranjeros = (await CasoDetectado.find().count()) - cubanos
 
-    return h.response({
-        cubanos,
-        extranjeros
-    })
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'nacionalidad',
+            {
+                cubanos,
+                extranjeros
+            },
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const edad = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let edades = { '0-4': 0, '5-9': 0, '10-18': 0, '19-40': 0, '41-60': 0, '61-80': 0, '+81': 0, 'Desconocido': 0 }
 
-    let casos = await CasoDetectado.find()
+    try {
 
-    casos.forEach((c) => {
-        if (c.edad) {
-            if (c.edad >= 0 && c.edad <= 4) edades['0-4']++
-            if (c.edad >= 5 && c.edad <= 9) edades['5-9']++
-            if (c.edad >= 10 && c.edad <= 18) edades['10-18']++
-            if (c.edad >= 19 && c.edad <= 40) edades['19-40']++
-            if (c.edad >= 41 && c.edad <= 60) edades['41-60']++
-            if (c.edad >= 61 && c.edad <= 80) edades['61-80']++
-            if (c.edad >= 81) edades['+81']++
-        }
-        else {
-            edades['Desconocido']++
-        }
-    })
+        let edades = { '0-4': 0, '5-9': 0, '10-18': 0, '19-40': 0, '41-60': 0, '61-80': 0, '+81': 0, 'Desconocido': 0 }
 
-    return h.response(edades)
+        let casos = await CasoDetectado.find()
+
+        casos.forEach((c) => {
+            if (c.edad) {
+                if (c.edad >= 0 && c.edad <= 4) edades['0-4']++
+                if (c.edad >= 5 && c.edad <= 9) edades['5-9']++
+                if (c.edad >= 10 && c.edad <= 18) edades['10-18']++
+                if (c.edad >= 19 && c.edad <= 40) edades['19-40']++
+                if (c.edad >= 41 && c.edad <= 60) edades['41-60']++
+                if (c.edad >= 61 && c.edad <= 80) edades['61-80']++
+                if (c.edad >= 81) edades['+81']++
+            }
+            else {
+                edades['Desconocido']++
+            }
+        })
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'edad',
+            edades,
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const tests = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let summary_days = await ResumenDia.find()
 
-    let diagnosticados: Array<number> = []
+    try {
+        let summary_days = await ResumenDia.find()
 
-    for (var i = 0; i < summary_days.length; i++) {
-        diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
+        let diagnosticados: Array<number> = []
+
+        for (var i = 0; i < summary_days.length; i++) {
+            diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
+        }
+
+        let diagnosticados_acc: Array<number> = [diagnosticados[0],]
+
+        for (var i = 1; i < summary_days.length; i++) {
+            diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
+        }
+
+
+        let tests: Array<number> = []
+        let detectados: Array<number> = []
+        let proporcion: Array<number> = []
+
+        for (var i = 12; i < summary_days.length; i++) {
+            tests[i - 12] = summary_days[i].tests_total
+            detectados[i - 12] = diagnosticados_acc[i]
+            proporcion[i - 12] = Number(((detectados[i - 12] / tests[i - 12]) * 100).toFixed(2))
+        }
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'tests',
+            {
+                tests,
+                detectados,
+                proporcion
+            },
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+
     }
-
-    let diagnosticados_acc: Array<number> = [diagnosticados[0],]
-
-    for (var i = 1; i < summary_days.length; i++) {
-        diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
+    catch (err) {
+        return h.response().code(500)
     }
-
-
-    let tests: Array<number> = []
-    let detectados: Array<number> = []
-    let proporcion: Array<number> = []
-
-    for (var i = 12; i < summary_days.length; i++) {
-        tests[i - 12] = summary_days[i].tests_total
-        detectados[i - 12] = diagnosticados_acc[i]
-        proporcion[i - 12] = Number(((detectados[i - 12] / tests[i - 12]) * 100).toFixed(2))
-    }
-
-    return h.response({
-        tests,
-        detectados,
-        proporcion
-    })
 }
 
 export const provincias = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let casos = await CasoDetectado.find()
 
-    let provincias = {}
+    try {
+        let casos = await CasoDetectado.find()
 
-    casos.forEach((c) => {
-        let t = (provincias as any)[c.provincia_detección] || 0;
-        (provincias as any)[c.provincia_detección] = t + 1
-    })
+        let provincias = {}
 
-    return h.response(provincias)
+        casos.forEach((c) => {
+            let t = (provincias as any)[c.provincia_detección] || 0;
+            (provincias as any)[c.provincia_detección] = t + 1
+        })
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'provincias',
+            provincias,
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
 
 export const municipios = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
-    let casos = await CasoDetectado.find()
 
-    let municipios = {}
+    try {
+        let casos = await CasoDetectado.find()
 
-    casos.forEach((c) => {
-        let t = (municipios as any)[c.municipio_detección] || 0;
-        (municipios as any)[c.municipio_detección] = t + 1
-    })
+        let municipios = {}
 
-    return h.response(municipios)
+        casos.forEach((c) => {
+            let label = c.municipio_detección + 
+            ' (' + 
+                c.provincia_detección.replace(/[^A-Z]/g, '') 
+            + ')'
+
+            let t = (municipios as any)[label] || 0;
+            (municipios as any)[label] = t + 1
+        })
+
+        let graph_api = process.env.GRAPH_API || 'http://127.0.0.1:5000/'
+
+        let gresponse = await axios.post(graph_api + 'municipios',
+            municipios,
+            { responseType: 'arraybuffer' }
+        )
+
+        return h.response(Buffer.from(gresponse.data, 'binary'))
+            .type('image/png')
+            .header('Connection', 'keep-alive')
+            .header('Cache-Control', 'no-cache')
+    }
+    catch (err) {
+        return h.response().code(500)
+    }
 }
