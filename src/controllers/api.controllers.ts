@@ -25,11 +25,11 @@ export const summary = async (req: Request, h: ResponseToolkit):
 
         let activos = total_diagnosticados - total_evacuados - total_recuperados - total_fallecidos
 
-        let recuperacion = Number((total_recuperados * 100 / activos).toFixed(2))
+        let recuperacion = Number((total_recuperados * 100 / total_diagnosticados).toFixed(2))
 
         let total_ingresados = summary_days[summary_days.length - 1].sujetos_riesgo
 
-        let mortalidad = Number((total_fallecidos * 100 / activos).toFixed(2))
+        let mortalidad = Number((total_fallecidos * 100 / total_diagnosticados).toFixed(2))
 
         let fecha = summary_days[summary_days.length - 1].fecha
 
