@@ -6,10 +6,22 @@ import ResumenDia from '../models/ResumenDia'
 export const summary = async (req: Request, h: ResponseToolkit):
     Promise<ResponseObject> => {
     try {
-        let casos = await CasoDetectado.find()
+        // let casos = await CasoDetectado.find()
         let summary_days = await ResumenDia.find()
 
-        let total_diagnosticados = casos.length
+        let diagnosticados: Array<number> = []
+       
+        for (var i = 0; i < summary_days.length; i++) {
+            diagnosticados[i] = summary_days[i].diagnosticados_numero || 0
+        }
+
+        let diagnosticados_acc: Array<number> = [diagnosticados[0],]
+
+        for (var i = 1; i < summary_days.length; i++) {
+            diagnosticados_acc[i] = diagnosticados_acc[i - 1] + diagnosticados[i]
+        }
+
+        let total_diagnosticados = diagnosticados_acc[diagnosticados_acc.length-1]
         let diagnosticados_hoy = summary_days[summary_days.length - 1].diagnosticados_numero
         let diferencia_ayer = diagnosticados_hoy - summary_days[summary_days.length - 2].diagnosticados_numero
 
@@ -32,6 +44,8 @@ export const summary = async (req: Request, h: ResponseToolkit):
         let mortalidad = Number((total_fallecidos * 100 / total_diagnosticados).toFixed(2))
 
         let fecha = summary_days[summary_days.length - 1].fecha
+
+        
 
         return h.response({
             total_diagnosticados,
